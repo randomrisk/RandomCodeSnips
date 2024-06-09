@@ -1,16 +1,16 @@
 # This script is to calculate commonly used features
 import numpy as np
 from scipy.signal import lfilter
+from scipy.signal import welch
+from spectrum import arburg
 
 def arithmetic_mean(X):
     return np.mean(X)
 
 def autoregressive_model(X, order=4):
-    from spectrum import arburg
     return arburg(X, order)[0][1:]
 
-def bandpower(X, fs, band):
-    from scipy.signal import welch
+def bandpower(X, fs, band): 
     f, Pxx = welch(X, fs=fs)
     idx = np.logical_and(f >= band[0], f <= band[1])
     return np.trapz(Pxx[idx], f[idx])

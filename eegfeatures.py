@@ -1,3 +1,4 @@
+# This script is to calculate commonly used features
 import numpy as np
 from scipy.signal import lfilter
 

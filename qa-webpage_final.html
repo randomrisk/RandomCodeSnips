@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q&A Flashcards</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        body, html {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .content-wrapper {
+            width: 90%;
+            max-width: 1000px;
+            height: 90%;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .title {
+            font-size: 32px;
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        .qa-card {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .question, .answer {
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+        }
+        .question {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .answer {
+            font-weight: 400;
+            color: #34495e;
+            display: none;
+        }
+        .question-counter {
+            font-size: 20px;
+            color: #7f8c8d;
+            text-align: center;
+            margin-top: 15px;
+        }
+        .keyboard-tip {
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+            color: #7f8c8d;
+            font-size: 18px;
+        }
+        #importSection {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+        #toggleImport, #toggleView, #historyBtn {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+        #toggleImport:hover, #toggleView:hover, #historyBtn:hover {
+            background-color: rgba(46, 204, 113, 0.2);
+        }
+        #qaInput {
+            width: 100%;
+            height: 200px;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+        #importBtn {
+            display: none;
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #ecf0f1;
+            margin-bottom: 20px;
+            border-radius: 3px;
+        }
+        .progress {
+            height: 100%;
+            background-color: #FFA500;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+        #allQAView {
+            display: none;
+            overflow-y: auto;
+            height: 100%;
+            white-space: pre-wrap;
+            font-family: 'Roboto', sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #historyModal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #historyList {
+            list-style-type: none;
+            padding: 0;
+        }
+        #historyList li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        #historyList li:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content-wrapper">
+            <div class="title">Q&A Flashcards</div>
+            <div class="progress-bar">
+                <div class="progress" id="progressBar"></div>
+            </div>
+            <div id="qa-container" class="qa-card">
+                <div class="question" id="currentQuestion"></div>
+                <div class="answer" id="currentAnswer"></div>
+            </div>
+            <div class="question-counter" id="questionCounter"></div>
+            <div class="keyboard-tip">
+                Tip: Use ← → arrow keys to navigate, ↓ ↑ or space to toggle answer
+            </div>
+            <div id="importSection">
+                <button id="toggleImport" onclick="toggleImportSection()">Import</button>
+                <button id="toggleView" onclick="toggleView()">Toggle View</button>
+                <button id="historyBtn" onclick="showHistory()">History</button>
+                <textarea id="qaInput" placeholder="Paste your Q&A pairs or JSON here"></textarea>
+                <button id="importBtn" onclick="importQA()">Apply</button>
+            </div>
+            <div id="allQAView"></div>
+        </div>
+    </div>
+
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeHistory()">&times;</span>
+            <h2>History</h2>
+            <ul id="historyList"></ul>
+        </div>
+    </div>
+
+    <script>
+        let qaPairs = [
+            { question: "What is the largest country by area?", answer: "Russia, with a total area of about 17.1 million square kilometers." },
+            { question: "What is the deepest ocean trench on Earth?", answer: "The Mariana Trench in the western Pacific Ocean, with a maximum depth of approximately 11,034 meters." },
+            { question: "What is the largest organ in the human body?", answer: "The skin, which covers the entire body surface and performs various important functions including protection and temperature regulation." }
+        ];
+
+        let currentQuestion = 0;
+        let isAllView = false;
+
+        function updateQACard() {
+            const questionElement = document.getElementById('currentQuestion');
+            const answerElement = document.getElementById('currentAnswer');
+            questionElement.textContent = qaPairs[currentQuestion].question;
+            answerElement.textContent = qaPairs[currentQuestion].answer;
+            updateQuestionCounter();
+            updateProgressBar();
+            adjustFontSize(questionElement);
+            adjustFontSize(answerElement);
+        }
+
+        function adjustFontSize(element) {
+            const maxHeight = element.parentElement.clientHeight / 2;
+            let fontSize = 28;
+            element.style.fontSize = fontSize + 'px';
+            while (element.scrollHeight > maxHeight && fontSize > 12) {
+                fontSize--;
+                element.style.fontSize = fontSize + 'px';
+            }
+        }
+
+        function toggleAnswer() {
+            const answerElement = document.getElementById('currentAnswer');
+            answerElement.style.display = answerElement.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function navigateQuestions(direction) {
+            currentQuestion += direction;
+            if (currentQuestion < 0) currentQuestion = qaPairs.length - 1;
+            if (currentQuestion >= qaPairs.length) currentQuestion = 0;
+            updateQACard();
+            document.getElementById('currentAnswer').style.display = 'none';
+        }
+
+        function updateQuestionCounter() {
+            document.getElementById('questionCounter').textContent = `${currentQuestion + 1} / ${qaPairs.length}`;
+        }
+
+        function updateProgressBar() {
+            const progressBar = document.getElementById('progressBar');
+            const progress = ((currentQuestion + 1) / qaPairs.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function toggleImportSection() {
+            const qaInput = document.getElementById('qaInput');
+            const importBtn = document.getElementById('importBtn');
+            qaInput.style.display = qaInput.style.display === 'none' ? 'block' : 'none';
+            importBtn.style.display = importBtn.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleView() {
+            isAllView = !isAllView;
+            const qaContainer = document.getElementById('qa-container');
+            const allQAView = document.getElementById('allQAView');
+            const progressBar = document.querySelector('.progress-bar');
+            const questionCounter = document.querySelector('.question-counter');
+            const keyboardTip = document.querySelector('.keyboard-tip');
+
+            if (isAllView) {
+                qaContainer.style.display = 'none';
+                progressBar.style.display = 'none';
+                questionCounter.style.display = 'none';
+                keyboardTip.style.display = 'none';
+                allQAView.style.display = 'block';
+                displayAllQA();
+            } else {
+                qaContainer.style.display = 'flex';
+                progressBar.style.display = 'block';
+                questionCounter.style.display = 'block';
+                keyboardTip.style.display = 'block';
+                allQAView.style.display = 'none';
+                updateQACard();
+            }
+        }
+
+        function displayAllQA() {
+            const allQAView = document.getElementById('allQAView');
+            let content = '';
+            qaPairs.forEach((pair, index) => {
+                content += `Q: ${pair.question}\nA: ${pair.answer}\n\n`;
+            });
+            allQAView.textContent = content.trim();
+        }
+
+        function importQA() {
+            const input = document.getElementById('qaInput').value.trim();
+            let newQAPairs = [];
+
+            if (input.startsWith('{') || input.startsWith('[')) {
+                // JSON format
+                try {
+                    newQAPairs = JSON.parse(input);
+                } catch (error) {
+                    alert('Invalid JSON format. Please check your input.');
+                    return;
+                }
+            } else {
+                // Q&A format
+                const pairs = input.split('Q:').filter(item => item.trim() !== '');
+                newQAPairs = pairs.map(pair => {
+                    const [question, answer] = pair.split('A:');
+                    return {
+                        question: question.trim(),
+                        answer: answer ? answer.trim() : ''
+                    };
+                });
+            }
+
+            if (newQAPairs.length > 0) {
+                qaPairs = newQAPairs;
+                currentQuestion = 0;
+                updateQACard();
+                document.getElementById('qaInput').value = '';
+                document.getElementById('qaInput').style.display = 'none';
+                document.getElementById('importBtn').style.display = 'none';
+                saveToHistory(qaPairs);
+            } else {
+                alert('No valid Q&A pairs found. Please check your input.');
+            }
+        }
+
+        function saveToHistory(qaPairs) {
+            let history = JSON.parse(localStorage.getItem('qaHistory') || '[]');
+            const newEntry = {
+                id: Date.now(),
+                title: qaPairs[0].question.substring(0, 30) + '...',
+                date: new Date().toLocaleString(),
+                pairs: qaPairs
+            };
+            history.unshift(newEntry);
+            if (history.length > 10) history.pop(); // Keep only the last 10 entries
+            localStorage.setItem('qaHistory', JSON.stringify(history));
+        }
+
+        function showHistory() {
+            const historyModal = document.getElementById('historyModal');
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            const history = JSON.parse(localStorage.getItem('qaHistory') || '[]');
+            
+            history.forEach(entry => {
+                const li = document.createElement('li');
+                li.textContent = `${entry.title} (${entry.date})`;
+                li.onclick = () => loadHistoryEntry(entry.id);
+                historyList.appendChild(li);
+            });
+
+            historyModal.style.display = 'block';
+        }
+
+        function closeHistory() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+
+        function loadHistoryEntry(id) {
+            const history = JSON.parse(localStorage.getItem('qaHistory') || '[]');
+            const entry = history.find(e => e.id === id);
+            if (entry) {
+                qaPairs = entry.pairs;
+                currentQuestion = 0;
+                updateQACard();
+                closeHistory();
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                navigateQuestions(-1);
+            } else if (event.key === 'ArrowRight') {
+                navigateQuestions(1);
+            } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === ' ') {
+                toggleAnswer();
+            }
+        });
+
+        updateQACard();
+    </script>
+</body>
+</html>
